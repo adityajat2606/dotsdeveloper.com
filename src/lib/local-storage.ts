@@ -15,6 +15,8 @@ export const storageKeys = {
   adSaves: 'nexus-ad-saves',
   theme: 'nexus-theme',
   settings: 'nexus-settings',
+  /** Client-only marker written after a successful sign-in (UI persistence). */
+  lastLoginSuccessAt: 'articlez-last-login-success-at',
 }
 
 export function loadFromStorage<T>(key: string, fallback: T): T {

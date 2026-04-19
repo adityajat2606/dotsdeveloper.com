@@ -2,14 +2,14 @@ import type { TaskKey } from '@/lib/site-config'
 
 export const siteContent = {
   navbar: {
-    tagline: 'Independent editorial publication',
+    tagline: 'Article publishing & reading',
   },
   footer: {
-    tagline: 'Articles, features, and thoughtful publishing',
+    tagline: 'Stories, essays, and long-form articles',
   },
   hero: {
     badge: 'Developer articles and insights',
-    title: ['Follow article-led publishing with a sharper editorial rhythm.'],
+    title: ['Submit your article and join our network.', 'Editorial layout tuned for calm, focused reading.'],
     description:
       'A premium article site focused on developer stories, explainers, and thoughtful technology writing.',
     primaryCta: {
@@ -29,48 +29,48 @@ export const siteContent = {
   },
   home: {
     metadata: {
-      title: 'Stories, visuals, and discoverable content',
+      title: 'Articles, essays, and editorial publishing',
       description:
-        'Explore articles, images, listings, and curated posts through a cleaner reading-first experience.',
-      openGraphTitle: 'Stories, visuals, and discoverable content',
+        'Read and publish long-form articles with a calm editorial layout focused on typography and clarity.',
+      openGraphTitle: 'Articles, essays, and editorial publishing',
       openGraphDescription:
-        'Discover articles, visual posts, and connected content through a calmer reading-first experience.',
-      keywords: ['story platform', 'article site', 'visual content', 'content discovery'],
+        'Discover thoughtful articles and submit your own work to the network.',
+      keywords: ['articles', 'publishing', 'essays', 'editorial', 'reading'],
     },
     introBadge: 'About the platform',
-    introTitle: 'Built for reading, browsing, and connecting different kinds of content.',
+    introTitle: 'An article-first publication surface.',
     introParagraphs: [
-      'This site brings together article-style reading, visual browsing, and structured discovery so visitors can move naturally between different content types.',
-      'Instead of separating stories, visuals, and supporting resources into disconnected surfaces, the platform keeps them connected in one place with consistent navigation and easier exploration.',
-      'Whether someone starts with a story, an image-led post, a listing, or a resource page, they can keep discovering related content without friction.',
+      'This site is tuned for reading and writing: generous spacing, clear hierarchy, and a homepage that behaves like a magazine cover.',
+      'Browse by topic, open a featured lead story, and move into the full article view without noisy chrome.',
+      'Authors can submit work and readers can follow the feed without switching between unrelated product modes.',
     ],
     sideBadge: 'At a glance',
     sidePoints: [
-      'Reading-first homepage with stronger emphasis on stories and imagery.',
-      'Connected sections for articles, visuals, listings, and supporting resources.',
-      'Cleaner browsing rhythm designed to make exploration feel easier.',
-      'Lightweight interactions that keep the experience fast and readable.',
+      'Editorial typography and mint surfaces inspired by modern magazines.',
+      'Featured story plus a compact list for faster scanning.',
+      'Category filters that map directly to the article library.',
+      'Lightweight motion and CSS-first styling for fast loads.',
     ],
     primaryLink: {
       label: 'Browse articles',
       href: '/articles',
     },
     secondaryLink: {
-      label: 'See visuals',
-      href: '/images',
+      label: 'Submit an article',
+      href: '/create/article',
     },
   },
   cta: {
     badge: 'Start exploring',
-    title: 'Explore articles, visuals, and resources through one connected experience.',
+    title: 'Write, publish, and read articles in one calm workspace.',
     description:
-      'Move between articles, image-led posts, listings, and resources through one clearer and more connected visual system.',
+      'Create an account to save reading progress, or jump straight into the article library to explore what is new.',
     primaryCta: {
       label: 'Get Started Free',
       href: '/register',
     },
     secondaryCta: {
-      label: 'Contact Sales',
+      label: 'Contact us',
       href: '/contact',
     },
   },

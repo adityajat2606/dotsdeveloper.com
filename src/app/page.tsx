@@ -7,6 +7,7 @@ import { Footer } from '@/components/shared/footer'
 import { SchemaJsonLd } from '@/components/seo/schema-jsonld'
 import { TaskPostCard } from '@/components/shared/task-post-card'
 import { SITE_CONFIG, type TaskKey } from '@/lib/site-config'
+import { CATEGORY_OPTIONS } from '@/lib/categories'
 import { buildPageMetadata } from '@/lib/seo'
 import { fetchTaskPosts } from '@/lib/task-data'
 import { siteContent } from '@/config/site.content'
@@ -39,6 +40,10 @@ const taskIcons: Record<TaskKey, any> = {
   classified: Tag,
   image: ImageIcon,
   profile: User,
+  social: LayoutGrid,
+  pdf: FileText,
+  org: Building2,
+  comment: FileText,
 }
 
 function resolveTaskKey(value: unknown, fallback: TaskKey): TaskKey {
@@ -72,6 +77,10 @@ function getPostMeta(post?: SitePost | null) {
   }
 }
 
+function getPostTask(post: SitePost): unknown {
+  return (post as SitePost & { task?: unknown }).task
+}
+
 function getDirectoryTone(brandPack: string) {
   if (brandPack === 'market-utility') {
     return {
@@ -101,14 +110,15 @@ function getDirectoryTone(brandPack: string) {
 
 function getEditorialTone() {
   return {
-    shell: 'bg-[#fbf6ee] text-[#241711]',
-    panel: 'border border-[#dcc8b7] bg-[#fffdfa] shadow-[0_24px_60px_rgba(77,47,27,0.08)]',
-    soft: 'border border-[#e6d6c8] bg-[#fff4e8]',
-    muted: 'text-[#6e5547]',
-    title: 'text-[#241711]',
-    badge: 'bg-[#241711] text-[#fff1e2]',
-    action: 'bg-[#241711] text-[#fff1e2] hover:bg-[#3a241b]',
-    actionAlt: 'border border-[#dcc8b7] bg-transparent text-[#241711] hover:bg-[#f5e7d7]',
+    shell: 'bg-white text-[#1a1a1a]',
+    hero: 'bg-[#e8f3f1]',
+    panel: 'border border-[#cfe8e0] bg-white shadow-[0_20px_56px_rgba(26,26,26,0.06)]',
+    soft: 'border border-[#cfe8e0] bg-[#f4faf8]',
+    muted: 'text-[#5a6562]',
+    title: 'text-[#1a1a1a]',
+    badge: 'border border-[#1a1a1a]/15 bg-white text-[#1a1a1a]',
+    action: 'inline-flex items-center gap-2 rounded-lg bg-[#1a1a1a] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#2d2d2d]',
+    actionAlt: 'inline-flex items-center gap-2 rounded-lg border border-[#cfe8e0] bg-white px-6 py-3 text-sm font-semibold text-[#1a1a1a] transition hover:bg-[#f4faf8]',
   }
 }
 
@@ -247,14 +257,14 @@ function DirectoryHome({ primaryTask, enabledTasks, listingPosts, classifiedPost
           <div className="grid gap-4 md:grid-cols-2">
             {(profilePosts.length ? profilePosts : classifiedPosts).slice(0, 4).map((post) => {
               const meta = getPostMeta(post)
-              const taskKey = resolveTaskKey(post.task, profilePosts.length ? 'profile' : 'classified')
+              const taskKey = resolveTaskKey(getPostTask(post), profilePosts.length ? 'profile' : 'classified')
               return (
                 <Link key={post.id} href={getTaskHref(taskKey, post.slug)} className={`overflow-hidden rounded-[1.8rem] ${tone.panel}`}>
                   <div className="relative h-44 overflow-hidden">
                     <ContentImage src={getPostImage(post)} alt={post.title} fill className="object-cover" />
                   </div>
                   <div className="p-5">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] opacity-70">{meta.category || post.task || 'Profile'}</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.24em] opacity-70">{meta.category || String(getPostTask(post) ?? '') || 'Profile'}</p>
                     <h3 className="mt-2 text-xl font-semibold">{post.title}</h3>
                     <p className={`mt-2 text-sm leading-7 ${tone.muted}`}>{post.summary || 'Quick access to local information and related surfaces.'}</p>
                   </div>
@@ -268,76 +278,158 @@ function DirectoryHome({ primaryTask, enabledTasks, listingPosts, classifiedPost
   )
 }
 
-function EditorialHome({ primaryTask, articlePosts, supportTasks }: { primaryTask?: EnabledTask; articlePosts: SitePost[]; supportTasks: EnabledTask[] }) {
+function getPostAuthor(post: SitePost) {
+  const c = post.content && typeof post.content === 'object' ? (post.content as Record<string, unknown>) : {}
+  const author = typeof c.author === 'string' ? c.author : post.authorName
+  return author?.trim() || 'Editorial'
+}
+
+/**
+ * Hero triptych: left medium, center tallest, right shortest (bottom-aligned).
+ * Pixabay `.../images/download/x-*.jpg` URLs return an HTML download page (not raw JPEGs),
+ * so we ship static files under /public/images/hero/ instead.
+ * Original references: pixabay.com x-9377114, x-5238316, x-350376 (1920px).
+ */
+const HERO_IMAGES = ['/images/hero/hero-left.jpg', '/images/hero/hero-center.jpg', '/images/hero/hero-right.jpg'] as const
+
+const HERO_IMAGE_ALTS = [
+  'Architecture photography — hero left',
+  'Architecture photography — hero center',
+  'Architecture photography — hero right',
+] as const
+
+function EditorialHome({ primaryTask, articlePosts }: { primaryTask?: EnabledTask; articlePosts: SitePost[] }) {
   const tone = getEditorialTone()
   const lead = articlePosts[0]
-  const side = articlePosts.slice(1, 5)
+  const side = articlePosts.slice(1, 4)
+  const popular = articlePosts.slice(0, 5)
+  const categoryChips = [{ name: 'All Categories', slug: 'all' }, ...CATEGORY_OPTIONS.slice(0, 5)]
 
   return (
     <main className={tone.shell}>
-      <section className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-18">
-        <div className="grid gap-10 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
+      <section className={`${tone.hero}`}>
+        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:px-8 lg:py-20">
           <div>
-            <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] ${tone.badge}`}>
-              <FileText className="h-3.5 w-3.5" />
-              Reading-first publication
-            </span>
-            <h1 className={`mt-6 max-w-4xl text-5xl font-semibold tracking-[-0.06em] sm:text-6xl ${tone.title}`}>
-              Essays, analysis, and slower reading designed like a publication, not a dashboard.
+            <h1 className={`font-display max-w-xl text-4xl font-semibold leading-[1.12] tracking-[-0.04em] sm:text-5xl lg:text-[2.75rem] ${tone.title}`}>
+              Submit your article and join our network!
             </h1>
-            <p className={`mt-6 max-w-2xl text-base leading-8 ${tone.muted}`}>{SITE_CONFIG.description}</p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href={primaryTask?.route || '/articles'} className={`inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold ${tone.action}`}>
-                Start reading
+            <p className={`mt-6 max-w-lg text-base leading-relaxed ${tone.muted}`}>{SITE_CONFIG.description}</p>
+            <div className="mt-8">
+              <Link href="/create/article" className={tone.action}>
+                Submit article
                 <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link href="/about" className={`inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold ${tone.actionAlt}`}>
-                About the publication
               </Link>
             </div>
           </div>
+          <div className="flex w-full max-w-md items-end justify-center gap-2 self-end sm:mx-auto sm:max-w-lg sm:gap-3 lg:mx-0 lg:max-w-none lg:justify-end">
+            {[0, 1, 2].map((i) => {
+              const heights = [
+                'min-h-[240px] sm:min-h-[300px]', // left — medium
+                'min-h-[300px] sm:min-h-[380px]', // center — tallest
+                'min-h-[200px] sm:min-h-[240px]', // right — shortest
+              ]
+              return (
+                <div
+                  key={HERO_IMAGES[i]}
+                  className={`relative w-[30%] max-w-[110px] overflow-hidden rounded-2xl border border-[#cfe8e0] bg-[#e8eef0] shadow-sm sm:max-w-[150px] lg:max-w-[180px] ${heights[i]}`}
+                >
+                  <ContentImage
+                    src={HERO_IMAGES[i]}
+                    alt={HERO_IMAGE_ALTS[i]}
+                    fill
+                    className="object-cover object-center"
+                    loading={i === 0 ? 'eager' : 'lazy'}
+                    fetchPriority={i === 0 ? 'high' : undefined}
+                    intrinsicWidth={1920}
+                    intrinsicHeight={1280}
+                  />
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </section>
 
-          <aside className={`rounded-[2rem] p-6 ${tone.panel}`}>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] opacity-70">Inside this issue</p>
-            <div className="mt-5 space-y-5">
-              {side.map((post) => (
-                <Link key={post.id} href={`/articles/${post.slug}`} className="block border-b border-black/10 pb-5 last:border-b-0 last:pb-0">
-                  <p className="text-sm font-semibold uppercase tracking-[0.18em] opacity-60">Feature</p>
-                  <h3 className="mt-2 text-xl font-semibold">{post.title}</h3>
-                  <p className={`mt-2 text-sm leading-7 ${tone.muted}`}>{post.summary || 'Long-form perspective with a calmer reading rhythm.'}</p>
+      <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <h2 className={`font-display text-3xl font-semibold tracking-tight ${tone.title}`}>Popular works</h2>
+          <div className="hidden flex-1 items-center gap-3 sm:flex sm:pl-8">
+            <div className="h-px flex-1 bg-[#cfe8e0]" />
+            <span className="inline-block h-2 w-2 shrink-0 rounded-full border border-[#1a1a1a]/20 bg-[#e8f3f1]" aria-hidden />
+          </div>
+        </div>
+        <div className="flex gap-6 overflow-x-auto pb-2">
+          {popular.length
+            ? popular.map((post) => (
+                <Link key={post.id} href={`/articles/${post.slug}`} className={`flex min-w-[240px] max-w-[280px] shrink-0 gap-3 rounded-xl border border-[#cfe8e0] bg-white p-4 transition hover:border-[#1a1a1a]/25 hover:shadow-md`}>
+                  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border border-[#cfe8e0] bg-[#f4faf8]">
+                    <ContentImage src={getPostImage(post)} alt="" fill className="object-cover" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className={`line-clamp-2 font-display text-sm font-semibold leading-snug ${tone.title}`}>{post.title}</p>
+                    <p className={`mt-1 text-xs ${tone.muted}`}>{getPostAuthor(post)}</p>
+                  </div>
                 </Link>
-              ))}
-            </div>
-          </aside>
+              ))
+            : null}
+        </div>
+
+        <div className="mt-10 flex flex-wrap gap-2 border-b border-[#cfe8e0] pb-4">
+          {categoryChips.map((cat) => {
+            const href = cat.slug === 'all' ? '/articles' : `/articles?category=${encodeURIComponent(cat.slug)}`
+            return (
+              <Link key={cat.slug} href={href} className={`rounded-full px-4 py-2 text-sm font-medium transition ${cat.slug === 'all' ? 'bg-[#1a1a1a] text-white' : 'text-[#5a6562] hover:bg-[#f4faf8]'}`}>
+                {cat.name}
+              </Link>
+            )
+          })}
         </div>
 
         {lead ? (
-          <div className={`mt-12 overflow-hidden rounded-[2.5rem] ${tone.panel}`}>
-            <div className="grid lg:grid-cols-[1.05fr_0.95fr]">
-              <div className="relative min-h-[360px] overflow-hidden">
-                <ContentImage src={getPostImage(lead)} alt={lead.title} fill className="object-cover" />
+          <div className="mt-10 grid gap-8 lg:grid-cols-[1.15fr_0.85fr] lg:items-start">
+            <Link href={`/articles/${lead.slug}`} className={`group relative block min-h-[420px] overflow-hidden rounded-2xl border border-[#cfe8e0] ${tone.panel}`}>
+              <ContentImage src={getPostImage(lead)} alt={lead.title} fill className="object-cover transition duration-500 group-hover:scale-[1.02]" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a]/85 via-[#1a1a1a]/20 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
+                <div className="mb-3 flex flex-wrap gap-2">
+                  <span className="rounded-md bg-white/95 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#1a1a1a]">Featured</span>
+                  <span className="rounded-md bg-[#e8f3f1]/95 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-[#1a1a1a]">
+                    {getPostMeta(lead).category || 'Article'}
+                  </span>
+                </div>
+                <h3 className="font-display text-2xl font-semibold text-white sm:text-3xl">{lead.title}</h3>
+                <p className="mt-2 text-sm text-white/85">{getPostAuthor(lead)}</p>
               </div>
-              <div className="p-8 lg:p-10">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] opacity-70">Lead story</p>
-                <h2 className="mt-4 text-4xl font-semibold tracking-[-0.04em]">{lead.title}</h2>
-                <p className={`mt-4 text-sm leading-8 ${tone.muted}`}>{lead.summary || 'A more deliberate lead story surface with room for a proper narrative setup.'}</p>
-                <Link href={`/articles/${lead.slug}`} className={`mt-8 inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-semibold ${tone.action}`}>
-                  Read article
-                  <ArrowRight className="h-4 w-4" />
+            </Link>
+            <div className="flex flex-col gap-4">
+              {side.map((post) => (
+                <Link key={post.id} href={`/articles/${post.slug}`} className={`group flex gap-4 rounded-xl border border-[#cfe8e0] bg-white p-3 transition hover:border-[#1a1a1a]/20 hover:shadow-sm`}>
+                  <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-[#f4faf8]">
+                    <ContentImage src={getPostImage(post)} alt="" fill className="object-cover transition duration-300 group-hover:scale-105" />
+                  </div>
+                  <div className="min-w-0 flex-1 py-0.5">
+                    <p className="text-[11px] font-medium uppercase tracking-wider text-[#5a6562]">
+                      {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
+                      {post.publishedAt ? ' · ' : ''}
+                      {getPostAuthor(post)}
+                    </p>
+                    <h4 className={`font-display mt-1 line-clamp-2 text-lg font-semibold leading-snug ${tone.title}`}>{post.title}</h4>
+                    <p className={`mt-1 line-clamp-2 text-sm leading-relaxed ${tone.muted}`}>{post.summary || 'A thoughtful piece from our contributors.'}</p>
+                  </div>
                 </Link>
-              </div>
+              ))}
             </div>
           </div>
-        ) : null}
-
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {supportTasks.slice(0, 3).map((task) => (
-            <Link key={task.key} href={task.route} className={`rounded-[1.8rem] p-6 ${tone.soft}`}>
-              <h3 className="text-xl font-semibold">{task.label}</h3>
-              <p className={`mt-3 text-sm leading-7 ${tone.muted}`}>{task.description}</p>
+        ) : (
+          <div className={`mt-10 rounded-2xl border border-dashed border-[#cfe8e0] bg-[#f4faf8] p-10 text-center ${tone.muted}`}>
+            <p className="font-medium text-[#1a1a1a]">Articles are on the way.</p>
+            <p className="mt-2 text-sm">Check back soon or submit the first story.</p>
+            <Link href={primaryTask?.route || '/articles'} className={`mt-6 inline-flex ${tone.action}`}>
+              Browse library
+              <ArrowRight className="h-4 w-4" />
             </Link>
-          ))}
-        </div>
+          </div>
+        )}
       </section>
     </main>
   )
@@ -375,7 +467,7 @@ function VisualHome({ primaryTask, imagePosts, profilePosts, articlePosts }: { p
             {gallery.slice(0, 5).map((post, index) => (
               <Link
                 key={post.id}
-                href={getTaskHref(resolveTaskKey(post.task, 'image'), post.slug)}
+                href={getTaskHref(resolveTaskKey(getPostTask(post), 'image'), post.slug)}
                 className={index === 0 ? `col-span-2 row-span-2 overflow-hidden rounded-[2.4rem] ${tone.panel}` : `overflow-hidden rounded-[1.8rem] ${tone.soft}`}
               >
                 <div className={index === 0 ? 'relative h-[360px]' : 'relative h-[170px]'}>
@@ -440,7 +532,7 @@ function CurationHome({ primaryTask, bookmarkPosts, profilePosts, articlePosts }
 
           <div className="grid gap-4 md:grid-cols-2">
             {collections.map((post) => (
-              <Link key={post.id} href={getTaskHref(resolveTaskKey(post.task, 'sbm'), post.slug)} className={`rounded-[1.8rem] p-6 ${tone.panel}`}>
+              <Link key={post.id} href={getTaskHref(resolveTaskKey(getPostTask(post), 'sbm'), post.slug)} className={`rounded-[1.8rem] p-6 ${tone.panel}`}>
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] opacity-70">Collection</p>
                 <h3 className="mt-3 text-2xl font-semibold">{post.title}</h3>
                 <p className={`mt-3 text-sm leading-8 ${tone.muted}`}>{post.summary || 'A calmer bookmark surface with room for context and grouping.'}</p>
@@ -490,7 +582,6 @@ export default async function HomePage() {
   ).filter(({ posts }) => posts.length)
 
   const primaryTask = enabledTasks.find((task) => task.key === recipe.primaryTask) || enabledTasks[0]
-  const supportTasks = enabledTasks.filter((task) => task.key !== primaryTask?.key)
   const listingPosts = taskFeed.find(({ task }) => task.key === 'listing')?.posts || []
   const classifiedPosts = taskFeed.find(({ task }) => task.key === 'classified')?.posts || []
   const articlePosts = taskFeed.find(({ task }) => task.key === 'article')?.posts || []
@@ -535,7 +626,7 @@ export default async function HomePage() {
         />
       ) : null}
       {productKind === 'editorial' ? (
-        <EditorialHome primaryTask={primaryTask} articlePosts={articlePosts} supportTasks={supportTasks} />
+        <EditorialHome primaryTask={primaryTask} articlePosts={articlePosts} />
       ) : null}
       {productKind === 'visual' ? (
         <VisualHome primaryTask={primaryTask} imagePosts={imagePosts} profilePosts={profilePosts} articlePosts={articlePosts} />
